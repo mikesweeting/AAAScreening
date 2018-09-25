@@ -125,6 +125,19 @@ shinyUI(
                         conditionalPanel(
                           condition = "output.complete==1",
                           tableOutput("events")  
+                        ),
+                        conditionalPanel(
+                          condition= "output.complete==1",
+                          selectInput("eventplot", label = h3('Timing and AAA size of specific events' ),
+                                      choices = list("Incidental AAA detection"="incidentalDetection", 
+                                                     "Elective EVAR AAA repair" = "electiveSurgeryEvar",
+                                                     "Elective Open AAA repair" = "electiveSurgeryOpen",
+                                                     "AAA rupture"="rupture",
+                                                     "Emergency EVAR AAA repair"="emergencySurgeryEvar", 
+                                                     "Emergency Open AAA repair"="emergencySurgeryOpen", 
+                                                     "AAA-related death"="aaaDeath"), 
+                                      selected = "rupture"),
+                          plotOutput("plot.event")
                         )
                  )
                )

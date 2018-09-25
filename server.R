@@ -2,6 +2,7 @@
 library(shiny)
 library(parallel)
 library(ggplot2)
+library(viridis)
 ## other libraries that may come in useful...
 # library(shinyjs)
 # library(doParallel)
@@ -513,7 +514,7 @@ shinyServer(function(input, output) {
                                                        threshold=v1other()$aortaDiameterThresholds[1], updateProgress)
     
     # res<-processPersonsControlOnly(v0, v1other, v2) 
-    # res.sampled<-processPersonsAboveDiagnosisThreshold(v0, v1other, v2, threshold=2.5) 
+    # res.sampled<-processPersonsAboveDiagnosisThreshold(v0, v1other, v2, threshold=v1other$aortaDiameterThresholds[1]) 
     
     
     output$complete<-reactive({
@@ -536,6 +537,19 @@ shinyServer(function(input, output) {
     output$events<-renderTable(
       tab2,rownames=F,striped=T,hover=T,bordered=T,align="c",na=""
     )
+    
+    ## Event vs. diameter 2d density plots
+    ##data<-eventsPlotData(res,events=c("rupture","aaaDeath","electiveSurgeryEvar","electiveSurgeryOpen","emergencySurgeryEvar","emergencySurgeryOpen","incidentalDetection"),treatmentGroup="noScreening")
+    data<-eventsPlotData(res,res.sampled,events=c("rupture","aaaDeath","electiveSurgeryEvar","electiveSurgeryOpen","emergencySurgeryEvar","emergencySurgeryOpen","incidentalDetection"),threshold=v1other()$aortaDiameterThresholds[1])
+    
+    ## data<-eventsPlotData(res,res.sampled,events=c("rupture","aaaDeath","electiveSurgeryEvar","electiveSurgeryOpen","emergencySurgeryEvar","emergencySurgeryOpen","incidentalDetection"),threshold=v1other$aortaDiameterThresholds[1])
+    ## eventsPlot(data,event="rupture",v1other=v1other)
+    ##eventsPlot(data,event="incidentalDetection",v1other=v1other)
+    
+    ## eventsPlot(data,event="rupture",v1other=v1other)
+    output$plot.event<-renderPlot({
+      eventsPlot(data,event=input$eventplot,v1other=v1other())
+    })
     
     ## Convergence plot
     plot1<-conv.plot(res.sampled)
