@@ -200,3 +200,109 @@ other.conv.plot<-function(result,event,v1other){
 }
 
 
+# ## Function to create events plot data.frame for any treatment group using standard sampling
+# eventsPlotData<-function(personsInfo, events, treatmentGroup) {
+#   
+#   data<-data.frame(time=NULL,event=NULL)
+#   
+#   b0<-sapply(personsInfo$eventHistories,function(i){i[[treatmentGroup]]$b0})
+#   b1<-sapply(personsInfo$eventHistories,function(i){i[[treatmentGroup]]$b1})
+#   for(event in events){
+#     # extract event number corresponding to "event" for each individual. NA means the event does not occur
+#     eventNumber<-sapply(personsInfo$eventHistories,function(i){match(event,i[[treatmentGroup]]$events)})
+#     ## extract event times for those who have the event. NA mean the event does not occur
+#     eventTimes<-sapply(1:length(personsInfo$eventHistories),function(i){personsInfo$eventHistories[[i]][[treatmentGroup]]$times[eventNumber[i]]})
+#     ## extract AAA sizes at event times
+#     eventAAASize<-exp(b0+b1*eventTimes)
+#     if(any(!is.na(eventTimes))){
+#       data<-rbind(data,data.frame(time=eventTimes[!is.na(eventTimes)],event=event,AAASize=eventAAASize[!is.na(eventTimes)]))
+#     }
+#   }
+#   
+#   return(data=data)
+# }
+
+## Function to create events plot data.frame for both no screened and screened group (using sampling over the threshold)
+eventsPlotData<-function(personsInfo,personsInfoOver,events,threshold){
+  
+  data<-data.frame(time=NULL,event=NULL,AAASize=NULL,treatmentGroup=NULL)
+  
+  ## No Screening
+  b0.noScreening<-sapply(personsInfo$eventHistories,function(i){i[["noScreening"]]$b0})
+  b1.noScreening<-sapply(personsInfo$eventHistories,function(i){i[["noScreening"]]$b1})
+  
+  ## Screening group (over threshold)
+  b0.screening.over<-sapply(personsInfoOver$eventHistories,function(i){i[["screening"]]$b0})
+  b1.screening.over<-sapply(personsInfoOver$eventHistories,function(i){i[["screening"]]$b1})
+  noScreening.under<-sapply(personsInfo$eventHistories,function(i){i[["noScreening"]]$initialAortaSizeAsMeasured})<threshold
+  
+  
+  for(event in events){
+    ## noScreening group
+    # extract event number corresponding to "event" for each individual. NA means the event does not occur
+    eventNumber<-sapply(personsInfo$eventHistories,function(i){match(event,i[["noScreening"]]$events)})
+    ## extract event times for those who have the event. NA mean the event does not occur
+    eventTimes<-sapply(1:length(personsInfo$eventHistories),function(i){personsInfo$eventHistories[[i]][["noScreening"]]$times[eventNumber[i]]})
+    ## extract AAA sizes at event times
+    eventAAASize<-exp(b0.noScreening+b1.noScreening*eventTimes)
+    if(any(!is.na(eventTimes))){
+      data<-rbind(data,data.frame(time=eventTimes[!is.na(eventTimes)],event=event,
+                                  AAASize=eventAAASize[!is.na(eventTimes)],treatmentGroup="Not invited to screening"))
+    }
+    
+    ## screening group
+    ## over threshold
+    # extract event number corresponding to "event" for each individual. NA means the event does not occur
+    eventNumberOver<-sapply(personsInfoOver$eventHistories,function(i){match(event,i[["screening"]]$events)})
+    # extract event number corresponding to "event" for each individual. NA means the event does not occur
+    eventNumberScreening<-eventNumber
+    eventNumberScreening[noScreening.under==F]<-eventNumberOver[noScreening.under==F]
+    ## extract event times for those who have the event. NA mean the event does not occur
+    eventTimesOver<-sapply(1:length(personsInfoOver$eventHistories),function(i){personsInfoOver$eventHistories[[i]][["screening"]]$times[eventNumberOver[i]]})
+    eventTimesScreening<-eventTimes
+    eventTimesScreening[noScreening.under==F]<-eventTimesOver[noScreening.under==F]
+    ## extract AAA sizes at event times
+    eventAAASizeOver<-exp(b0.screening.over+b1.screening.over*eventTimesOver)
+    eventAAASizeScreening<-eventAAASize
+    eventAAASizeScreening[noScreening.under==F]<-eventAAASizeOver[noScreening.under==F]
+    if(any(!is.na(eventTimes))){
+      data<-rbind(data,data.frame(time=eventTimesScreening[!is.na(eventTimesScreening)],event=event,
+                                  AAASize=eventAAASizeScreening[!is.na(eventTimesScreening)],
+                                  treatmentGroup="Invited to screening"))
+    }
+    
+  }
+  
+  return(data=data)
+}
+
+## Function to plot a 2d scatter plot of event against AAA diameter
+eventsPlot<-function(data,event,v1other){
+  data<-data[data$event==event,]
+  
+  xlim<-c(0,max(data$time)+5)
+  ylim<-c(min(data$AAASize)-1,max(data$AAASize)+1)
+  diag.thresh<-v1other$aortaDiameterThreshold[1]
+  inter.thresh<-v1other$aortaDiameterThreshold[length(v1other$aortaDiameterThresholds)]
+  # ggplot(data,aes(x=time,y=AAASize))+
+  #   stat_density2d(aes(alpha=..level..), geom="polygon")+facet_wrap(~treatmentGroup)+
+  #   scale_alpha_continuous(limits=c(0,0.2),breaks=seq(0,0.2,by=0.025))+
+  #   geom_point(colour="red",alpha=0.3)+
+  #   lims(x = xlim,y = ylim)+
+  #   geom_hline(yintercept=c(diag.thresh,inter.thresh),linetype=2)+
+  #   xlab("Time since screening (years)")+
+  #   ylab("Aorta size (cm)")+guides(alpha=guide_legend(title="Density"))
+
+  ggplot(data,aes(x=time,y=AAASize))+
+    stat_density2d(aes(alpha=..level..,fill=..level..),geom="polygon")+facet_wrap(~treatmentGroup)+
+    scale_alpha_continuous(limits=c(0,0.2),breaks=seq(0,0.2,by=0.025))+
+    geom_point(colour="red",alpha=0.3)+
+    lims(x = xlim,y = ylim)+
+    geom_hline(yintercept=c(diag.thresh,inter.thresh),linetype=2)+
+    xlab("Time since screening (years)")+
+    ylab("Aorta size (cm)")+guides(alpha=guide_legend(title="Density"))+scale_fill_viridis()
+  
+}  
+
+
+
