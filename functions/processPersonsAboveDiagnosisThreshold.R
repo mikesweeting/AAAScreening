@@ -68,13 +68,18 @@ processPersonsAboveDiagnosisThreshold <- function(v0, v1other, v2,
 	 }
 	
   if(v0$returnEventHistories){
+
     ## As above the difference in the event numbers is a the difference in numbers from the sampled over the threshold model * proportion over threshold
     #events<-eventsandcosts(resultOver)
     #events2<-data.frame(event=events$event,incrementalEvents=(1-trueProportionBelowThreshold)*(events[,"screening.n",drop=F]-events[,"noScreening.n"]))
     events<-tab.events(resultOver,v0=v0,v1other=v1other)[,c(1,2,5)]
     events[,"Difference"]<-(1-trueProportionBelowThreshold)*events[,"Difference"]
     result$incrementalEvents<-events
+    
+    result$eventHistories<-resultOver$eventHistories
   }	
+	
+	result$trueProportionBelowThreshold<-trueProportionBelowThreshold
 	
 	return(result)
 }
