@@ -102,7 +102,6 @@ getBinaryVariable <- function(varName, v1other, v2, v3, eventTime) {
 	# Check result is not NULL or NA and return it.
 	if (is.null(result) || is.na(result)) {
 		cat("Error in getBinaryVariable: result is NULL or NA.\n")
-		browser()
 		stop("result is ", {if (is.null(result)) "NULL" else result})
 	}
 	return(result)

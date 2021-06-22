@@ -35,7 +35,7 @@ shinyServer(function(input, output) {
       v0$returnAllPersonsQuantities <- TRUE
       v0$method <- "parallelBatches"
       v0$randomSeed <- 2
-      v0$numberOfProcesses <- detectCores()-1 ## use number cores minus 1 to allow machine to still function
+      v0$numberOfProcesses <- 3 ## use 3 cores as this seems to be the maximum on shinyapps without crashing
       v0 <- setUnspecifiedElementsOfv0(v0)
       
     } else if(input$inputType==3){ ## Best alternative screening strategy
